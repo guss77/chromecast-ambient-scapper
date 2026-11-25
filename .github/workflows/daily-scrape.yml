@@ -1,0 +1,36 @@
+name: Daily Chromecast Scrape
+
+on:
+  schedule:
+    # Runs every day at 06:00 UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  scrape-and-commit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+
+      - name: Run scrapper
+        run: ruby url-scapper.rb
+
+      - name: Commit updated chromecast.json
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git add chromecast.json
+          if git diff --cached --quiet; then
+            echo "No changes to chromecast.json; nothing to commit."
+          else
+            git commit -m "Update chromecast.json via daily scrape"
+            git push
+          fi
